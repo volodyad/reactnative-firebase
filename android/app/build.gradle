@@ -98,7 +98,7 @@ android {
     buildToolsVersion "23.0.1"
 
     defaultConfig {
-        applicationId "com.reactnativefirebase"
+        applicationId "com.saturn_five_react_app"
         minSdkVersion 16
         targetSdkVersion 22
         versionCode 1
@@ -144,6 +144,11 @@ dependencies {
     compile "com.android.support:appcompat-v7:23.0.1"
     compile "com.facebook.react:react-native:+"  // From node_modules
 
+    implementation "com.google.android.gms:play-services-base:15.0.0"
+    implementation "com.google.firebase:firebase-core:15.0.2"
+    implementation "com.google.firebase:firebase-auth:15.1.0"
+    implementation "com.google.firebase:firebase-database:15.0.0"
+    implementation "com.google.firebase:firebase-storage:15.0.2"
 }
 
 // Run this once to be able to run the application with BUCK
