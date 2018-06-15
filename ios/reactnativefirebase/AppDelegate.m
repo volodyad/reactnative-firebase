@@ -9,11 +9,16 @@
 
 #import <React/RCTBundleURLProvider.h>
 #import <React/RCTRootView.h>
+#import <Firebase.h>
 
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+  [FIRApp configure];
+  [FIRDatabase database].persistenceEnabled = YES;
+   //int oneMegabyte = 100 * 1024 * 1024;
+   //[FIRDatabase database].persistenceCacheSizeBytes = oneMegabyte;
   NSURL *jsCodeLocation;
 
   jsCodeLocation = [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"index" fallbackResource:nil];
