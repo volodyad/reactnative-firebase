@@ -112,3 +112,12 @@ fastlane/test_output
 /*.gcno
  
 # End of https://www.gitignore.io/api/swift,xcode
+firebase-debug.log
+database.rules.json
+android/google-services.json
+android/app/release/app-release.apk
+android/app/release/output.json
+firebase.json
+.firebaserc
+config.json
+config.json

@@ -1,106 +1,111 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, Button, Switch, ScrollView } from 'react-native';
 import firebase from 'react-native-firebase';
-import config from './config';
+const config = require('./config');
 
-function memorySizeOf(obj) {
-  var bytes = 0;
-
-  function sizeOf(obj) {
-      if(obj !== null && obj !== undefined) {
-          switch(typeof obj) {
-          case 'number':
-              bytes += 8;
-              break;
-          case 'string':
-              bytes += obj.length * 2;
-              break;
-          case 'boolean':
-              bytes += 4;
-              break;
-          case 'object':
-              var objClass = Object.prototype.toString.call(obj).slice(8, -1);
-              if(objClass === 'Object' || objClass === 'Array') {
-                  for(var key in obj) {
-                      if(!obj.hasOwnProperty(key)) continue;
-                      sizeOf(obj[key]);
-                  }
-              } else bytes += obj.toString().length * 2;
-              break;
-          }
-      }
-      return bytes;
-  };
-
-  function formatByteSize(bytes) {
-      if(bytes < 1024) return bytes + " bytes";
-      else if(bytes < 1048576) return(bytes / 1024).toFixed(3) + " KiB";
-      else if(bytes < 1073741824) return(bytes / 1048576).toFixed(3) + " MiB";
-      else return(bytes / 1073741824).toFixed(3) + " GiB";
-  };
-
-  return formatByteSize(sizeOf(obj));
-};
-
-const subscribe = (path) => {
-  const ref = firebase.database().ref(path);
-  ref.keepSynced(true);
-
-   debugger;
-  ref.on('value', (snapshot) => {
-    debugger;
-    console.log(path);
-    const v = snapshot.val();
-   const test =  memorySizeOf(v)
-    console.warn('data loaded')
-    const text = v[0].value[0].BR1.lastInArea;
-    this.setState({loaded: text})
-  });
-}
-
+const PATH_LIST = [
+  'account.json',
+  'address.json',
+  'checkList.json',
+  'collect_on_delivery.json',
+  'country.json',
+  'daily_matrix_depot0030.json',
+  'depot.json',
+  'networks.json',
+  'parcelRange.json',
+  'pickup_locations.json',
+  'road_speeds.json',
+  'service.json',
+  'vehicleTypes.json']
 export default class App extends React.Component {
   constructor() {
     super();
-    this.state = { loaded: 'abc' };
+    this.state = { status: 'Loading', selection: {}  };
+    this.refsCache = [];
   }
   componentDidMount() {
-    const loadRoute = () => {
-      subscribe('./dailyMatrix');
-      subscribe('./dailyMatrix2');
-      subscribe('./dailyMatrix3');
-      subscribe('./dailyMatrix4');
-    }
     debugger;
-    firebase.auth().onAuthStateChanged(function(user) {
+    let firstLoad = true;
+    firebase.auth().onAuthStateChanged((user) => {
+      if(!firstLoad) return;
+      firstLoad = false;
       if(!user) {
-        firebase.auth()
-        .signInAndRetrieveDataWithEmailAndPassword('', '')
-        .then(() => {
-          const test1 = firebase.auth().currentUser;
-          loadRoute();
-        })
-        .catch(() => {
-          debugger;
-        }) ;
+       // this.login(config.EMAIL, config.PASSWORD)
       }
       else {
-        loadRoute();
-       }
-    
+
+      }
+      
+    }); 
+  }
+
+  subscribe = (path) => {
+    const ref = firebase.database().ref(path);
+    ref.keepSynced(true);
+    this.refsCache.push(ref);
+  }
+
+
+  login(userName, password) {
+    firebase.auth()
+    .signInAndRetrieveDataWithEmailAndPassword(userName, password)
+    .then(() => {
+      this.subscribeSelected();
+    })
+    .catch(() => {
+      debugger;
     });
+  }
+
+  subscribeSelected = () => {
+    const selectedPathList = PATH_LIST.filter(path => this.state[path]);
+    debugger;
+    for (var path in selectedPathList) {
+      this.subscribe(path);
+    }
+  }
   
-   
+  loadAll() {config.EMAIL, config.PASSWORD
+    this.login(config.EMAIL, config.PASSWORD)
+  }
+
+  renderSwitch(path) {
+    debugger;
+    const s = config;
+    return (
+      <View key={path}>
+        <Switch 
+      
+          onValueChange = {(value) => {
+            this.setState({[path]: value})
+          } }
+          value = {this.state[path]}
+          testID= {path}
+          accessibilityLabel= {path}
+        />
+        <Text>{path}</Text>
+      </View>
+    )
+  }
+
+  renderSwitches() {
+    return <View style={styles.switchListContainer}>
+      {PATH_LIST.map((path) => this.renderSwitch(path) )}
+    </View>
   }
 
   render() {
-    debugger;
     return (
-      <View style={styles.container}>
-        <Text>Open up App.js to start working on your app!</Text>
-        <Text>Changes you make will automatically reload.</Text>
-        <Text>Shake your phone to open the developer menu.</Text>
-        <Text>11{this.state.loaded}</Text>
-      </View>
+      <ScrollView contentContainerStyle={styles.container}>
+        { this.renderSwitches()}
+        <Text>{this.state.status}</Text>
+        <Button
+          onPress={() => this.loadAll()}
+          title="Load"
+          testID= {"load"}
+          accessibilityLabel="load"
+        />
+      </ScrollView>
     );
   }
 }
@@ -108,8 +113,17 @@ export default class App extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#fff'
   },
+
+  switchListContainer: {
+      flex: 1,
+      alignItems: 'center',
+      marginBottom: 100
+  },
+  switchContainer: {
+    flex: 1,
+    flexDirection: 'row'
+}
 });
+
