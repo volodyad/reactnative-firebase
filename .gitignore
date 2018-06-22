@@ -120,4 +120,5 @@ android/app/release/output.json
 firebase.json
 .firebaserc
 config.json
-config.json
+
+.DS_Store

@@ -1,39 +1,34 @@
 import React from 'react';
-import { StyleSheet, Text, View, Button, Switch, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, Button, Switch, ScrollView, TextInput } from 'react-native';
 import firebase from 'react-native-firebase';
 const config = require('./config');
-
-const PATH_LIST = [
-  'account.json',
-  'address.json',
-  'checkList.json',
-  'collect_on_delivery.json',
-  'country.json',
-  'daily_matrix_depot0030.json',
-  'depot.json',
-  'networks.json',
-  'parcelRange.json',
-  'pickup_locations.json',
-  'road_speeds.json',
-  'service.json',
-  'vehicleTypes.json']
+import { getFirebaseRefByRest } from './apiFirebase';
+import _ from 'lodash';
+const PERSISTENT_PATH = 'persistent';
+  
 export default class App extends React.Component {
   constructor() {
     super();
-    this.state = { status: 'Loading', selection: {}  };
+    this.state = { 
+      status: 'Loading',
+      selection: {},
+      logined: false,
+      rootPath: PERSISTENT_PATH,
+      pathList: []
+    };
     this.refsCache = [];
+    this.loadSelected = this.loadSelected.bind(this);
+    this.loadAll = this.loadAll.bind(this);
+    this.loadPathItems = this.loadPathItems.bind(this);
+    this.onLogined = this.onLogined.bind(this);
   }
   componentDidMount() {
-    debugger;
-    let firstLoad = true;
     firebase.auth().onAuthStateChanged((user) => {
-      if(!firstLoad) return;
-      firstLoad = false;
       if(!user) {
-       // this.login(config.EMAIL, config.PASSWORD)
+        this.login(config.EMAIL, config.PASSWORD)
       }
       else {
-
+        this.onLogined();
       }
       
     }); 
@@ -45,35 +40,65 @@ export default class App extends React.Component {
     this.refsCache.push(ref);
   }
 
+  subscribeOn = (path) => {
+    const ref = firebase.database().ref(path);
+    debugger;
+    ref.on('value', (snapshot) => {
+      debugger;
+      const val = snapshot.val();
+      console.warn(path + ' loaded');
+    });
+  }
+
+  loadPathItems() {
+    getFirebaseRefByRest(this.state.rootPath, true).then((items) => {
+      const paths = Object.keys(items);
+      this.setState({ pathList: paths })
+    })
+  }
+
+  onLogined() {
+    debugger;
+    this.setState({logined: true});
+    this.loadPathItems();
+  }
 
   login(userName, password) {
     firebase.auth()
     .signInAndRetrieveDataWithEmailAndPassword(userName, password)
-    .then(() => {
-      this.subscribeSelected();
-    })
+    .then(onLogined)
     .catch(() => {
-      debugger;
+      this.setState({ status: 'Login error' })
     });
   }
 
   subscribeSelected = () => {
-    const selectedPathList = PATH_LIST.filter(path => this.state[path]);
-    debugger;
-    for (var path in selectedPathList) {
-      this.subscribe(path);
+    const selectedPathList = this.state.pathList.filter(path => this.state[path]);
+    for (var index in selectedPathList) {
+      const path = selectedPathList[index];
+      const subscribePath = `${this.state.rootPath}/${path}`;
+      this.subscribe(subscribePath);
+      if(this.state.subscribeOnListener) {
+        this.subscribeOn(subscribePath);
+      }
     }
   }
   
-  loadAll() {config.EMAIL, config.PASSWORD
-    this.login(config.EMAIL, config.PASSWORD)
+  loadSelected() {
+    this.subscribeSelected();
   }
 
+  loadAll() {
+    const { rootPath } = this.state;
+    this.subscribe(rootPath);
+    if(this.state.subscribeOnListener) {
+      this.subscribeOn(rootPath);
+    }
+
+  }
   renderSwitch(path) {
-    debugger;
-    const s = config;
     return (
-      <View key={path}>
+      <View key={path} style={styles.switchContainer}>
         <Switch 
       
           onValueChange = {(value) => {
@@ -90,22 +115,46 @@ export default class App extends React.Component {
 
   renderSwitches() {
     return <View style={styles.switchListContainer}>
-      {PATH_LIST.map((path) => this.renderSwitch(path) )}
+      {this.state.pathList.map((path) => this.renderSwitch(path) )}
     </View>
   }
 
   render() {
     return (
-      <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.container}>
+        <ScrollView>
         { this.renderSwitches()}
         <Text>{this.state.status}</Text>
+        { this.renderSwitch('subscribeOnListener')}
+        <TextInput 
+          onChangeText={(rootPath) => this.setState({rootPath})}
+          value={this.state.rootPath} 
+          testID= {"rootPath"}
+          accessibilityLabel="rootPath"
+          />
+        </ScrollView>
+        <Button
+          onPress={() => this.loadPathItems()}
+          title="Load Path Items"
+          disabled={!this.state.logined}
+          testID= {"reloadRootPathList"}
+          accessibilityLabel="reloadRootPathList"
+        />
+        <Button
+          onPress={() => this.loadSelected()}
+          title="Load Selected"
+          disabled={!this.state.logined}
+          testID= {"loadSelected"}
+          accessibilityLabel="loadSelected"
+        />
         <Button
           onPress={() => this.loadAll()}
-          title="Load"
-          testID= {"load"}
-          accessibilityLabel="load"
+          title="Load All"
+          testID= {"loadAll"}
+          disabled={!this.state.logined}
+          accessibilityLabel="loadAll"
         />
-      </ScrollView>
+      </View>
     );
   }
 }
@@ -118,12 +167,12 @@ const styles = StyleSheet.create({
 
   switchListContainer: {
       flex: 1,
-      alignItems: 'center',
-      marginBottom: 100
+      margin: 20
   },
   switchContainer: {
     flex: 1,
-    flexDirection: 'row'
-}
+    flexDirection: 'row',
+    alignItems: 'flex-start'
+  }
 });
 
