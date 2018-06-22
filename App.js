@@ -5,7 +5,8 @@ const config = require('./config');
 import { getFirebaseRefByRest } from './apiFirebase';
 import _ from 'lodash';
 const PERSISTENT_PATH = 'persistent';
-  
+firebase.perf().setPerformanceCollectionEnabled(true);
+
 export default class App extends React.Component {
   constructor() {
     super();
@@ -16,6 +17,7 @@ export default class App extends React.Component {
       rootPath: PERSISTENT_PATH,
       pathList: []
     };
+    
     this.refsCache = [];
     this.loadSelected = this.loadSelected.bind(this);
     this.loadAll = this.loadAll.bind(this);
@@ -23,6 +25,12 @@ export default class App extends React.Component {
     this.onLogined = this.onLogined.bind(this);
   }
   componentDidMount() {
+debugger;
+   const trace =  firebase.perf().newTrace('ura test1');
+   trace.start();
+   trace.incrementCounter('uraaaa');
+
+   trace.stop();
     firebase.auth().onAuthStateChanged((user) => {
       if(!user) {
         this.login(config.EMAIL, config.PASSWORD)
@@ -30,7 +38,6 @@ export default class App extends React.Component {
       else {
         this.onLogined();
       }
-      
     }); 
   }
 
