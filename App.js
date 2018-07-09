@@ -5,7 +5,6 @@ const config = require('./config');
 import { getFirebaseRefByRest } from './apiFirebase';
 import _ from 'lodash';
 const PERSISTENT_PATH = 'persistent';
-firebase.perf().setPerformanceCollectionEnabled(true);
 
 export default class App extends React.Component {
   constructor() {
@@ -26,11 +25,6 @@ export default class App extends React.Component {
   }
   componentDidMount() {
 debugger;
-   const trace =  firebase.perf().newTrace('ura test1');
-   trace.start();
-   trace.incrementCounter('uraaaa');
-
-   trace.stop();
     firebase.auth().onAuthStateChanged((user) => {
       if(!user) {
         this.login(config.EMAIL, config.PASSWORD)
@@ -101,8 +95,18 @@ debugger;
     if(this.state.subscribeOnListener) {
       this.subscribeOn(rootPath);
     }
-
   }
+
+  loadNoPerm() {
+    const { rootPath } = this.state;
+    const ref = firebase.database().ref(rootPath);
+    firebase.database().goOffline();
+    ref.on('value', (snapshot) => {
+      const val = snapshot.exists();
+  
+    });
+  }
+
   renderSwitch(path) {
     return (
       <View key={path} style={styles.switchContainer}>
@@ -160,6 +164,12 @@ debugger;
           testID= {"loadAll"}
           disabled={!this.state.logined}
           accessibilityLabel="loadAll"
+        />
+          <Button
+          onPress={() => this.loadNoPerm()}
+          title="Load No Permission"
+          testID= {"loadNoPerm"}
+          disabled={!this.state.logined}
         />
       </View>
     );
