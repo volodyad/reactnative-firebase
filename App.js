@@ -4,7 +4,8 @@ import firebase from 'react-native-firebase';
 const config = require('./config');
 import { getFirebaseRefByRest } from './apiFirebase';
 import _ from 'lodash';
-const PERSISTENT_PATH = 'persistent';
+const PERSISTENT_PATH = 'shiftManagers';
+let i = 5;
 
 export default class App extends React.Component {
   constructor() {
@@ -22,16 +23,37 @@ export default class App extends React.Component {
     this.loadAll = this.loadAll.bind(this);
     this.loadPathItems = this.loadPathItems.bind(this);
     this.onLogined = this.onLogined.bind(this);
+    this.login = this.login.bind(this);
+    this.goOnline = this.goOnline.bind(this);
   }
+
+  fbConnected() {
+    const connectedRef = firebase.database().ref(".info/connected");
+    const result = new Promise((resolve) => {
+      connectedRef.on("value", function(snap) {
+        resolve(snap.val());
+      });
+    })
+    return result;
+  }
+
   componentDidMount() {
-debugger;
     firebase.auth().onAuthStateChanged((user) => {
       if(!user) {
-        this.login(config.EMAIL, config.PASSWORD)
+        this.fbConnected().then(connected => {
+          //this.login(config.EMAIL, config.PASSWORD)
+          if(!connected) {
+            this.setState({ offline: true, logined: true });
+          }
+          else {
+            this.login(config.EMAIL, config.PASSWORD)
+          }
+        })
       }
       else {
         this.onLogined();
       }
+     
     }); 
   }
 
@@ -59,7 +81,6 @@ debugger;
   }
 
   onLogined() {
-    debugger;
     this.setState({logined: true});
     this.loadPathItems();
   }
@@ -67,7 +88,7 @@ debugger;
   login(userName, password) {
     firebase.auth()
     .signInAndRetrieveDataWithEmailAndPassword(userName, password)
-    .then(onLogined)
+    .then(this.onLogined)
     .catch(() => {
       this.setState({ status: 'Login error' })
     });
@@ -97,14 +118,109 @@ debugger;
     }
   }
 
+  goOnline() {
+    firebase.database().goOnline();
+  }
+
+
   loadNoPerm() {
-    const { rootPath } = this.state;
-    const ref = firebase.database().ref(rootPath);
-    firebase.database().goOffline();
+
+    debugger;
+  //  firebase.database().goOffline();
+    const path = 'test';
+    const ref = firebase.database().ref(path);
+    ref.keepSynced(true);
     ref.on('value', (snapshot) => {
-      const val = snapshot.exists();
-  
+      debugger;
+      const val = snapshot.val();
+      console.warn(path + ' loaded');
     });
+    //  debugger;
+    //  const s = ref.orderBy("rangeFrom")
+    //  .star(500)
+    //  .limitToFirst(1)
+    //  .once('value')
+    //  .then((snap) => { debugger;
+    //    const c = snap.val();
+    // ref.set({'1': 1})
+    // .then(() => {
+    //   debugger;
+    // }).catch(() => {
+    // });
+    //return;
+    // const generateTestData = () => {
+    //   return ([...Array(10).keys()].map(i => ({
+    //     [i]: 
+    //     {
+    //       rangeFrom: 101,
+    //       rangeTo: 200,
+    //       accountNumber: '1'
+    //     }})));
+    // }
+
+    const generateTestData1 = (i) => {
+      return {
+          rangeFrom: 107,
+          rangeTo: 233,
+          accountNumber: i,
+          big: [...Array(10).keys()].map(i => i + 'awdawdadwadaweawdawddwaawawdlkajwdkajd;awd;akd;lakwdlak;dlka;ldwkalw;dkawndawdkawdakdja;lwdjdawjdadad')
+        };
+    }
+
+  for(let i = 0; i < 1; i++ ) {
+    firebase.database().ref(path + '/' + i)
+      .set(generateTestData1(i)).then(() => {
+      //  debugger; 
+        console.log(i);
+      }).catch(() => {
+        //debugger;
+      });
+  }
+
+  firebase.database().ref(path + '/0', (values) => {
+    debugger;
+  })
+  
+
+  //  firebase.database().goOnline();
+    //    const s = ref.orderBy("rangeFrom")
+    //  .startAt(500)
+    //  .limitToFirst(1)
+    //  .once('value')
+    //  .then((snap) => { 
+    //    //debugger;
+    //   });
+    //    const c = snap.val();
+//     const { rootPath } = this.state;
+//     const path = 'persistent/events2/OUT';
+//     const ref = firebase.database().ref(path);
+//    firebase.database().goOffline();
+// debugger;
+// const ref1 = firebase.database().ref('persistent/events2');
+// ref1.on('value', (snapshot) => {
+//   debugger;
+//   const val = snapshot.val();
+
+// });
+//     ref.set({ id: 'megaevent '}).then(() => {
+//       console.log('saved');
+//       debugger;
+//     }).catch(() => {
+//       console.log('error');   debugger;
+
+//     })
+    // ref.on('value', (snapshot) => {
+    //   debugger;
+    //   const val = snapshot.val();
+  
+    // });
+    
+
+    // ref.set({ test: i++ }).then(() => {
+    //   debugger;
+  
+    // });
+    
   }
 
   renderSwitch(path) {
@@ -136,6 +252,7 @@ debugger;
         <ScrollView>
         { this.renderSwitches()}
         <Text>{this.state.status}</Text>
+        <Text>{this.state.offline}</Text>
         { this.renderSwitch('subscribeOnListener')}
         <TextInput 
           onChangeText={(rootPath) => this.setState({rootPath})}
@@ -169,6 +286,12 @@ debugger;
           onPress={() => this.loadNoPerm()}
           title="Load No Permission"
           testID= {"loadNoPerm"}
+          disabled={!this.state.logined}
+        />
+        <Button
+          onPress={() => this.goOnline()}
+          title="Go online"
+          testID= {"goOnline"}
           disabled={!this.state.logined}
         />
       </View>
