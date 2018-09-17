@@ -65,9 +65,7 @@ export default class App extends React.Component {
 
   subscribeOn = (path) => {
     const ref = firebase.database().ref(path);
-    debugger;
     ref.on('value', (snapshot) => {
-      debugger;
       const val = snapshot.val();
       console.warn(path + ' loaded');
     });
@@ -82,15 +80,16 @@ export default class App extends React.Component {
 
   onLogined() {
     this.setState({logined: true});
-    this.loadPathItems();
+ //   this.loadPathItems();
   }
 
   login(userName, password) {
     firebase.auth()
     .signInAndRetrieveDataWithEmailAndPassword(userName, password)
     .then(this.onLogined)
-    .catch(() => {
-      this.setState({ status: 'Login error' })
+    .catch((err) => {
+      debugger
+      this.setState({ status: `Login error ${err}` })
     });
   }
 
@@ -125,16 +124,27 @@ export default class App extends React.Component {
 
   loadNoPerm() {
 
+    firebase.database().ref('test')
+    .orderByKey()
+    .limitToFirst(1)
+    .once('value')
+    .then(snapshot => { 
+      debugger;
+      snapshot.val()
+    });
+return;
     debugger;
   //  firebase.database().goOffline();
-    const path = 'test';
-    const ref = firebase.database().ref(path);
-    ref.keepSynced(true);
-    ref.on('value', (snapshot) => {
-      debugger;
-      const val = snapshot.val();
-      console.warn(path + ' loaded');
-    });
+
+
+    // const path = 'test';
+    // const ref = firebase.database().ref(path);
+    // ref.keepSynced(true);
+    // ref.on('value', (snapshot) => {
+    //   debugger;
+    //   const val = snapshot.val();
+    //   console.warn(path + ' loaded');
+    // });
     //  debugger;
     //  const s = ref.orderBy("rangeFrom")
     //  .star(500)
